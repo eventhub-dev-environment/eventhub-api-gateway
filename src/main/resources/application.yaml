@@ -4,53 +4,58 @@ server:
 spring:
   application:
     name: api-gateway
-
   profiles:
     active: dev
-
   cloud:
     gateway:
-      routes:
-        - id: auth-service
-          uri: http://auth-service:8082
-          predicates:
-            - Path=/api/v1/auth/**
-          filters:
-            - AddRequestHeader=X-Gateway-Secret, ${GATEWAY_INTERNAL_SECRET:EventHubSecretKey2026!}
+      server:
+        webflux:
+          routes:
+            - id: auth-service
+              uri: http://auth-service:8082
+              predicates:
+                - Path=/api/v1/auth/**
 
-        - id: config-service
-          uri: http://config-service:8081
-          predicates:
-            - Path=/api/v1/configs/**
-          filters:
-            - AddRequestHeader=X-GATEWAY-SECRET, ${GATEWAY_INTERNAL_SECRET:EventHubSecretKey2026!}
+            - id: config-service
+              uri: http://config-service:8081
+              predicates:
+                - Path=/api/v1/configs/**
+
+            - id: event-service-events
+              uri: http://event-service:8083
+              predicates:
+                - Path=/api/v1/events/**
+
+            - id: event-service-categories
+              uri: http://event-service:8083
+              predicates:
+                - Path=/api/v1/categories/**
+
+            - id: booking-service
+              uri: http://booking-service:8084
+              predicates:
+                - Path=/api/v1/bookings/**
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250655368566D5971
+  secret: ${JWT_SECRET}
 
 gateway:
-  internal-secret: ${GATEWAY_INTERNAL_SECRET:EventHubSecretKey2026!}
+  internal-secret: ${GATEWAY_INTERNAL_SECRET}
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
-
   tracing:
     sampling:
       probability: 1.0
-
     propagation:
       type: "b3,w3c"
-
     export:
       zipkin:
-        endpoint: "http://zipkin:9411/api/v2/spans"
+        endpoint: ${MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT}
 
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
-
-  level:
-    io.micrometer.tracing: DEBUG
