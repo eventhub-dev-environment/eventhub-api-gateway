@@ -36,6 +36,11 @@ spring:
               predicates:
                 - Path=/api/v1/bookings/**
 
+            - id: payment-service
+              uri: http://payment-service:8085
+              predicates:
+                - Path=/api/v1/payments/**
+
 jwt:
   secret: ${JWT_SECRET}
 
