@@ -22,14 +22,15 @@ ext {
 }
 
 dependencies {
-	// Spring Cloud Gateway (WebFlux reactivo)
+	// Spring Cloud Gateway & Resiliencia Reactiva (Nombre corregido)
 	implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
+	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
 
 	// Security & Actuator
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-// Observabilidad, Micrometer Tracing & Zipkin
+	// Observabilidad, Micrometer Tracing & Zipkin
 	implementation 'org.springframework.boot:spring-boot-starter-zipkin'
 
 	// JJWT para validación de tokens

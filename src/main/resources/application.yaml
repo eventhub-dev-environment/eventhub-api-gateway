@@ -15,36 +15,119 @@ spring:
               uri: http://auth-service:8082
               predicates:
                 - Path=/api/v1/auth/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: authCircuitBreaker
+                    fallbackUri: forward:/fallback/auth-service
 
             - id: config-service
               uri: http://config-service:8081
               predicates:
                 - Path=/api/v1/configs/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: configCircuitBreaker
+                    fallbackUri: forward:/fallback/config-service
 
             - id: event-service-events
               uri: http://event-service:8083
               predicates:
                 - Path=/api/v1/events/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: eventCircuitBreaker
+                    fallbackUri: forward:/fallback/event-service
 
             - id: event-service-categories
               uri: http://event-service:8083
               predicates:
                 - Path=/api/v1/categories/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: eventCircuitBreaker
+                    fallbackUri: forward:/fallback/event-service
 
             - id: booking-service
               uri: http://booking-service:8084
               predicates:
                 - Path=/api/v1/bookings/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: bookingCircuitBreaker
+                    fallbackUri: forward:/fallback/booking-service
 
             - id: payment-service
               uri: http://payment-service:8085
               predicates:
                 - Path=/api/v1/payments/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: paymentCircuitBreaker
+                    fallbackUri: forward:/fallback/payment-service
 
             - id: notification-service
               uri: http://notification-service:8086
               predicates:
                 - Path=/api/v1/notifications/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: notificationCircuitBreaker
+                    fallbackUri: forward:/fallback/notification-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      authCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000ms
+        permittedNumberOfCallsInHalfOpenState: 3
+      configCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000ms
+        permittedNumberOfCallsInHalfOpenState: 3
+      eventCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000ms
+        permittedNumberOfCallsInHalfOpenState: 3
+      bookingCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000ms
+        permittedNumberOfCallsInHalfOpenState: 3
+      paymentCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000ms
+        permittedNumberOfCallsInHalfOpenState: 3
+      notificationCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000ms
+        permittedNumberOfCallsInHalfOpenState: 3
+  timelimiter:
+    instances:
+      authCircuitBreaker:
+        timeoutDuration: 3s
+      configCircuitBreaker:
+        timeoutDuration: 3s
+      eventCircuitBreaker:
+        timeoutDuration: 3s
+      bookingCircuitBreaker:
+        timeoutDuration: 3s
+      paymentCircuitBreaker:
+        timeoutDuration: 5s
+      notificationCircuitBreaker:
+        timeoutDuration: 3s
 
 jwt:
   secret: ${JWT_SECRET}
@@ -53,6 +136,9 @@ gateway:
   internal-secret: ${GATEWAY_INTERNAL_SECRET}
 
 management:
+  endpoint:
+    health:
+      show-details: always
   endpoints:
     web:
       exposure:
