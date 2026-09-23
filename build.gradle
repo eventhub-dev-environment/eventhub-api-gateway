@@ -38,6 +38,9 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
+	// OpenAPI / Swagger UI para Spring Cloud Gateway
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.0'
+
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

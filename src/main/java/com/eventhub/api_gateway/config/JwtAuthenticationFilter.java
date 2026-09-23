@@ -27,7 +27,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${gateway.internal-secret}")
     private String gatewayInternalSecret;
 
-    private final List<String> openEndpoints = List.of(
+    private final List<String> openEndpointPatterns = List.of(
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/v3/api-docs",
@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        if (openEndpoints.stream().anyMatch(path::startsWith)) {
+        if (openEndpointPatterns.stream().anyMatch(path::contains)) {
             // También inyectamos el secreto aquí, porque estas rutas nunca pasan
             // por la validación de JWT y por tanto nunca llegan a la rama de abajo.
             ServerHttpRequest openRequest = request.mutate()

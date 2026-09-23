@@ -17,7 +17,15 @@ public class SecurityConfig {
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .authorizeExchange(exchange -> exchange
-                        .anyExchange().permitAll()
+                        .pathMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**",
+                                "/fallback/**",
+                                "/api/v1/auth/**"
+                        ).permitAll()
+                        .anyExchange().permitAll() // O .authenticated() según las reglas de negocio
                 )
                 .build();
     }

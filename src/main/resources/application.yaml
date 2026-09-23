@@ -11,6 +11,50 @@ spring:
       server:
         webflux:
           routes:
+            # --- Rutas de documentación OpenAPI (deben ir ANTES que las rutas generales) ---
+            - id: auth-service-docs
+              uri: http://auth-service:8082
+              predicates:
+                - Path=/api/v1/auth/v3/api-docs/**
+              filters:
+                - RewritePath=/api/v1/auth/v3/api-docs(?<segment>.*), /v3/api-docs${segment}
+
+            - id: config-service-docs
+              uri: http://config-service:8081
+              predicates:
+                - Path=/api/v1/configs/v3/api-docs/**
+              filters:
+                - RewritePath=/api/v1/configs/v3/api-docs(?<segment>.*), /v3/api-docs${segment}
+
+            - id: event-service-docs
+              uri: http://event-service:8083
+              predicates:
+                - Path=/api/v1/events/v3/api-docs/**
+              filters:
+                - RewritePath=/api/v1/events/v3/api-docs(?<segment>.*), /v3/api-docs${segment}
+
+            - id: booking-service-docs
+              uri: http://booking-service:8084
+              predicates:
+                - Path=/api/v1/bookings/v3/api-docs/**
+              filters:
+                - RewritePath=/api/v1/bookings/v3/api-docs(?<segment>.*), /v3/api-docs${segment}
+
+            - id: payment-service-docs
+              uri: http://payment-service:8085
+              predicates:
+                - Path=/api/v1/payments/v3/api-docs/**
+              filters:
+                - RewritePath=/api/v1/payments/v3/api-docs(?<segment>.*), /v3/api-docs${segment}
+
+            - id: notification-service-docs
+              uri: http://notification-service:8086
+              predicates:
+                - Path=/api/v1/notifications/v3/api-docs/**
+              filters:
+                - RewritePath=/api/v1/notifications/v3/api-docs(?<segment>.*), /v3/api-docs${segment}
+
+            # --- Rutas generales de negocio (con circuit breaker donde aplica) ---
             - id: auth-service
               uri: http://auth-service:8082
               predicates:
@@ -129,6 +173,22 @@ resilience4j:
       notificationCircuitBreaker:
         timeoutDuration: 3s
 
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    urls:
+      - name: 1. Auth Service
+        url: /api/v1/auth/v3/api-docs
+      - name: 2. Event Service
+        url: /api/v1/events/v3/api-docs
+      - name: 3. Booking Service
+        url: /api/v1/bookings/v3/api-docs
+      - name: 4. Payment Service
+        url: /api/v1/payments/v3/api-docs
+
 jwt:
   secret: ${JWT_SECRET}
 
@@ -150,7 +210,7 @@ management:
       type: "b3,w3c"
     export:
       zipkin:
-        endpoint: ${MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT}
+        endpoint: ${MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
 
 logging:
   pattern:
