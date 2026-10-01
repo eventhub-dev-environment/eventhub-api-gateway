@@ -32,6 +32,7 @@ dependencies {
 
 	// Observabilidad, Micrometer Tracing & Zipkin
 	implementation 'org.springframework.boot:spring-boot-starter-zipkin'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	// JJWT para validación de tokens
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'

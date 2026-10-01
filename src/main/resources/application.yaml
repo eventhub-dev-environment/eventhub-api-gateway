@@ -203,6 +203,10 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
   tracing:
     sampling:
       probability: 1.0
