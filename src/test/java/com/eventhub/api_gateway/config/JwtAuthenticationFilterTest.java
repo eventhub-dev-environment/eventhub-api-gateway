@@ -38,7 +38,9 @@ class JwtAuthenticationFilterTest {
     void replacesClientSuppliedUserIdWithIdFromToken() {
         ServerWebExchange exchange = exchangeWithToken(tokenWithUserId("signed-user-id"))
                 .mutate()
-                .request(request -> request.header("X-User-Id", "spoofed-user-id"))
+                .request(request -> request
+                        .header("X-User-Id", "spoofed-user-id")
+                        .header("X-User-Email", "spoofed@example.com"))
                 .build();
         AtomicReference<ServerWebExchange> forwardedExchange = new AtomicReference<>();
 
@@ -49,6 +51,7 @@ class JwtAuthenticationFilterTest {
 
         HttpHeaders headers = forwardedExchange.get().getRequest().getHeaders();
         assertThat(headers.getFirst("X-User-Id")).isEqualTo("signed-user-id");
+        assertThat(headers.getFirst("X-User-Email")).isEqualTo("user@example.com");
         assertThat(headers.getFirst("X-Gateway-Secret")).isEqualTo("gateway-secret");
     }
 
