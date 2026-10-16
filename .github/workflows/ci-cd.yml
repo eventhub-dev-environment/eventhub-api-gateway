@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - api Gateway
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,22 +6,28 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  SERVICE_NAME: api-gateway
-  DOCKER_IMAGE_NAME: eventhub-api-gateway
+  DOCKER_IMAGE_NAME: ${{ github.event.repository.name }}
 
 jobs:
   # 1. Compilación Java 21 y Pruebas Unitarias
   build-and-test:
     name: Build & Test (Java 21)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout del código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configurar JDK 21 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -38,11 +44,11 @@ jobs:
     name: Build & Push Docker Image
     needs: build-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout del código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Autenticarse en Docker Hub
         uses: docker/login-action@v3
@@ -54,7 +60,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Construir y publicar imagen Docker
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
