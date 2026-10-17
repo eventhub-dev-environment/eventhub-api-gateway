@@ -166,8 +166,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean requiresCustomer(ServerHttpRequest request) {
-        return (request.getURI().getPath().equals("/api/v1/bookings")
-                || request.getURI().getPath().equals("/api/v1/payments/checkout-session"))
+        String path = request.getURI().getPath();
+        return (path.equals("/api/v1/bookings")
+                || path.matches("/api/v1/bookings/[^/]+/cancel")
+                || path.equals("/api/v1/payments/checkout-session"))
                 && request.getMethod() == org.springframework.http.HttpMethod.POST;
     }
 

@@ -188,6 +188,18 @@ class JwtAuthenticationFilterTest {
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN);
     }
 
+    @Test
+    void requiresCustomerRoleToCancelBooking() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest
+                .post("/api/v1/bookings/booking-123/cancel")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenWithoutCustomerRole())
+                .build());
+
+        filter.filter(exchange, forwarded -> Mono.empty()).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN);
+    }
+
     private MockServerWebExchange exchangeWithToken(String token) {
         return MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/bookings")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
