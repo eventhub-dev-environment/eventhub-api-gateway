@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class JwtAuthenticationFilterTest {
 
@@ -27,10 +30,13 @@ class JwtAuthenticationFilterTest {
             "test-secret-with-at-least-32-bytes".getBytes(StandardCharsets.UTF_8));
 
     private JwtAuthenticationFilter filter;
+    private TokenAuthorizationClient tokenAuthorizationClient;
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter();
+        tokenAuthorizationClient = mock(TokenAuthorizationClient.class);
+        when(tokenAuthorizationClient.isCurrent(anyString())).thenReturn(Mono.just(true));
+        filter = new JwtAuthenticationFilter(tokenAuthorizationClient);
         ReflectionTestUtils.setField(filter, "secret", SECRET);
         ReflectionTestUtils.setField(filter, "gatewayInternalSecret", "gateway-secret");
     }
@@ -98,6 +104,38 @@ class JwtAuthenticationFilterTest {
         filter.filter(exchange, forwarded -> Mono.empty()).block();
 
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void rejectsTokenWhenAuthServiceReportsRevokedAuthorization() {
+        when(tokenAuthorizationClient.isCurrent(anyString())).thenReturn(Mono.just(false));
+        MockServerWebExchange exchange = exchangeWithToken(tokenWithTenantRole());
+        AtomicReference<ServerWebExchange> forwardedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, forwarded -> {
+            forwardedExchange.set(forwarded);
+            return Mono.empty();
+        }).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.UNAUTHORIZED);
+        assertThat(forwardedExchange.get()).isNull();
+    }
+
+    @Test
+    void failsClosedWhenAuthServiceCannotValidateAuthorization() {
+        when(tokenAuthorizationClient.isCurrent(anyString()))
+                .thenReturn(Mono.error(new IllegalStateException("Auth Service unavailable")));
+        MockServerWebExchange exchange = exchangeWithToken(tokenWithTenantRole());
+        AtomicReference<ServerWebExchange> forwardedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, forwarded -> {
+            forwardedExchange.set(forwarded);
+            return Mono.empty();
+        }).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(forwardedExchange.get()).isNull();
     }
 
     @Test

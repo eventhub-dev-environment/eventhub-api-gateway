@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final String USER_ID_HEADER = "X-User-Id";
@@ -30,6 +32,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final String TENANT_ROLES_HEADER = "X-Tenant-Roles";
     private static final String TENANT_ID_HEADER = "X-Tenant-ID";
     private static final String GATEWAY_SECRET_HEADER = "X-Gateway-Secret";
+
+    private final TokenAuthorizationClient tokenAuthorizationClient;
+
+    public JwtAuthenticationFilter(TokenAuthorizationClient tokenAuthorizationClient) {
+        this.tokenAuthorizationClient = tokenAuthorizationClient;
+    }
 
     @Value("${jwt.secret}")
     private String secret;
@@ -62,7 +70,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         String token = authHeader.substring(7);
-
+        ServerWebExchange authenticatedExchange;
         try {
             Claims claims = validateAndExtractClaims(token);
             String userId = claims.get("userId", String.class);
@@ -115,11 +123,25 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 }
             }).build();
 
-            return chain.filter(exchange.mutate().request(modifiedRequest).build());
+            authenticatedExchange = exchange.mutate().request(modifiedRequest).build();
 
         } catch (Exception e) {
             return reject(exchange, HttpStatus.UNAUTHORIZED);
         }
+        return tokenAuthorizationClient.isCurrent(token)
+                .materialize()
+                .flatMap(signal -> {
+                    if (signal.isOnError() || !signal.hasValue()) {
+                        if (signal.isOnError()) {
+                            log.error("Auth Service no pudo validar los permisos vigentes", signal.getThrowable());
+                        }
+                        return reject(exchange, HttpStatus.SERVICE_UNAVAILABLE);
+                    }
+                    if (!Boolean.TRUE.equals(signal.get())) {
+                        return reject(exchange, HttpStatus.UNAUTHORIZED);
+                    }
+                    return chain.filter(authenticatedExchange);
+                });
     }
 
     private boolean isOpenEndpoint(String path) {
