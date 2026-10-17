@@ -136,6 +136,26 @@ class JwtAuthenticationFilterTest {
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.UNAUTHORIZED);
     }
 
+    @Test
+    void forwardsPaymentWebhookWithoutJwtButAddsGatewaySecret() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest
+                .post("/api/v1/payments/webhook")
+                .header("X-EventHub-Signature", "sha256=signature")
+                .header("X-User-Id", "spoofed-user")
+                .build());
+        AtomicReference<ServerWebExchange> forwardedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, forwarded -> {
+            forwardedExchange.set(forwarded);
+            return Mono.empty();
+        }).block();
+
+        HttpHeaders headers = forwardedExchange.get().getRequest().getHeaders();
+        assertThat(headers.getFirst("X-Gateway-Secret")).isEqualTo("gateway-secret");
+        assertThat(headers.getFirst("X-User-Id")).isNull();
+        assertThat(headers.getFirst("X-EventHub-Signature")).isEqualTo("sha256=signature");
+    }
+
     private MockServerWebExchange exchangeWithToken(String token) {
         return MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/bookings")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)

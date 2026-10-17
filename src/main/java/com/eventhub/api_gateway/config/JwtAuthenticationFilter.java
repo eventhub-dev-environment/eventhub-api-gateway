@@ -125,6 +125,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private boolean isOpenEndpoint(String path) {
         return path.equals("/api/v1/auth/login")
                 || path.equals("/api/v1/auth/register")
+                || path.equals("/api/v1/payments/webhook")
                 || isPathOrChild(path, "/v3/api-docs")
                 || isPathOrChild(path, "/api/v1/auth/v3/api-docs")
                 || isPathOrChild(path, "/api/v1/events/v3/api-docs")
