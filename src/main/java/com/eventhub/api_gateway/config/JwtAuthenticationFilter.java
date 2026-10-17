@@ -126,6 +126,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return path.equals("/api/v1/auth/login")
                 || path.equals("/api/v1/auth/register")
                 || path.equals("/api/v1/payments/webhook")
+                || path.equals("/api/v1/payments/webhook/stripe")
                 || isPathOrChild(path, "/v3/api-docs")
                 || isPathOrChild(path, "/api/v1/auth/v3/api-docs")
                 || isPathOrChild(path, "/api/v1/events/v3/api-docs")
@@ -165,7 +166,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean requiresCustomer(ServerHttpRequest request) {
-        return request.getURI().getPath().equals("/api/v1/bookings")
+        return (request.getURI().getPath().equals("/api/v1/bookings")
+                || request.getURI().getPath().equals("/api/v1/payments/checkout-session"))
                 && request.getMethod() == org.springframework.http.HttpMethod.POST;
     }
 

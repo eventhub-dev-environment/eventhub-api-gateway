@@ -156,6 +156,38 @@ class JwtAuthenticationFilterTest {
         assertThat(headers.getFirst("X-EventHub-Signature")).isEqualTo("sha256=signature");
     }
 
+    @Test
+    void forwardsStripeWebhookWithoutJwtAndPreservesStripeSignature() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest
+                .post("/api/v1/payments/webhook/stripe")
+                .header("Stripe-Signature", "t=123,v1=signature")
+                .header("X-User-Id", "spoofed-user")
+                .build());
+        AtomicReference<ServerWebExchange> forwardedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, forwarded -> {
+            forwardedExchange.set(forwarded);
+            return Mono.empty();
+        }).block();
+
+        HttpHeaders headers = forwardedExchange.get().getRequest().getHeaders();
+        assertThat(headers.getFirst("X-Gateway-Secret")).isEqualTo("gateway-secret");
+        assertThat(headers.getFirst("X-User-Id")).isNull();
+        assertThat(headers.getFirst("Stripe-Signature")).isEqualTo("t=123,v1=signature");
+    }
+
+    @Test
+    void requiresCustomerRoleToCreateStripeCheckoutSession() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest
+                .post("/api/v1/payments/checkout-session")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenWithoutCustomerRole())
+                .build());
+
+        filter.filter(exchange, forwarded -> Mono.empty()).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN);
+    }
+
     private MockServerWebExchange exchangeWithToken(String token) {
         return MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/bookings")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
@@ -185,6 +217,18 @@ class JwtAuthenticationFilterTest {
                 .subject("user@example.com")
                 .claim("userId", "user-123")
                 .claim("roles", List.of("CUSTOMER"))
+                .claim("tenantMemberships", List.of())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET)))
+                .compact();
+    }
+
+    private String tokenWithoutCustomerRole() {
+        return Jwts.builder()
+                .subject("staff@example.com")
+                .claim("userId", "staff-123")
+                .claim("roles", List.of("EVENT_ORGANIZER"))
                 .claim("tenantMemberships", List.of())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 60_000))
