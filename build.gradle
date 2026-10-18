@@ -25,6 +25,7 @@ dependencies {
 	// Spring Cloud Gateway & Resiliencia Reactiva (Nombre corregido)
 	implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
 	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+	implementation 'org.springframework.boot:spring-boot-starter-webclient'
 
 	// Security & Actuator
 	implementation 'org.springframework.boot:spring-boot-starter-security'
